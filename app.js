@@ -81,7 +81,7 @@ let searchQuery = '';
 let currentShift = JSON.parse(localStorage.getItem('kiot_shift')) || null;
 let customers = JSON.parse(localStorage.getItem('kiot_customers')) || [];
 let users = JSON.parse(localStorage.getItem('kiot_users')) || [
-  { username: 'admin', password: '123', role: 'admin' }
+  { username: 'admin', password: '2403', role: 'admin' }
 ];
 let currentUser = JSON.parse(localStorage.getItem('kiot_current_user')) || null;
 
