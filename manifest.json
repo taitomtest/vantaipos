@@ -1,0 +1,16 @@
+{
+  "name": "Văn Tài POS",
+  "short_name": "VT-POS",
+  "description": "Hệ thống quản lý bán hàng chuyên nghiệp",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f8f9fa",
+  "theme_color": "#0a66c2",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/3225/3225077.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
