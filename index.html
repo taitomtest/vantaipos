@@ -1,0 +1,1226 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Văn Tài POS - Quản lý bán hàng</title>
+  
+  <!-- PWA Meta Tags -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0a66c2">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Văn Tài POS">
+  
+  <!-- App Icons for iPhone -->
+  <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3225/3225077.png">
+  <link rel="apple-touch-startup-image" href="https://cdn-icons-png.flaticon.com/512/3225/3225077.png">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Libre+Barcode+39&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,1,0"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://unpkg.com/html5-qrcode"></script>
+</head>
+
+<body>
+  <!-- LOGIN SCREEN -->
+  <div id="login-screen">
+    <div class="login-card">
+      <div style="width: 64px; height: 64px; background: var(--primary-light); color: var(--primary); border-radius: 1rem; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem;">
+        <span class="material-symbols-rounded" style="font-size: 32px;">point_of_sale</span>
+      </div>
+      <h2 style="margin-bottom: 0.5rem;">VĂN TÀI POS</h2>
+      <p style="color: var(--text-muted); margin-bottom: 2rem;">Vui lòng đăng nhập để bắt đầu</p>
+      
+      <div class="input-group" style="text-align: left; margin-bottom: 1rem;">
+        <label>Tên đăng nhập</label>
+        <div class="input-wrapper">
+          <span class="material-symbols-rounded">person</span>
+          <input type="text" id="login-username" class="form-input" placeholder="Nhập username">
+        </div>
+      </div>
+      <div class="input-group" style="text-align: left; margin-bottom: 1.5rem;">
+        <label>Mật khẩu</label>
+        <div class="input-wrapper">
+          <span class="material-symbols-rounded">lock</span>
+          <input type="password" id="login-password" class="form-input" placeholder="Nhập password">
+        </div>
+      </div>
+      
+      <button class="login-btn" onclick="handleLogin()">Đăng nhập</button>
+      <p id="login-error" style="color: var(--danger); font-size: 0.85rem; margin-top: 1rem; display: none;">Sai tài khoản hoặc mật khẩu!</p>
+    </div>
+  </div>
+
+  <!-- WELCOME SCREEN (Transition) -->
+  <div id="welcome-screen" style="display: none; position: fixed; inset: 0; background: var(--primary); z-index: 10000; flex-direction: column; align-items: center; justify-content: center; color: white; text-align: center;">
+    <div class="welcome-content">
+      <div class="welcome-icon">
+        <span class="material-symbols-rounded" style="font-size: 80px;">verified_user</span>
+      </div>
+      <h1 style="font-size: 3rem; font-weight: 800; margin-bottom: 1rem; letter-spacing: -1px;">VĂN TÀI POS</h1>
+      <p style="font-size: 1.25rem; opacity: 0.9;">CẢM ƠN QUÝ KHÁCH ĐÃ SỬ DỤNG</p>
+      <div class="loading-bar-wrapper">
+        <div class="loading-bar"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="pos-layout" id="app-layout" style="display: none;">
+    <!-- Toast Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- Desktop Sidebar -->
+    <aside class="pos-sidebar">
+      <div class="sidebar-brand" style="padding: 1.5rem; text-align: center; border-bottom: 1px solid var(--border); margin-bottom: 1rem;">
+        <h2 style="font-size: 1.2rem; color: var(--primary); margin: 0;">VĂN TÀI POS</h2>
+      </div>
+
+      <!-- Specialized POS Button -->
+      <div style="padding: 0 1rem 1.5rem;">
+        <button class="primary-btn" onclick="switchView('pos')" id="nav-pos" style="width: 100%; height: 48px; border-radius: 12px; font-weight: 700; gap: 8px; box-shadow: 0 4px 12px rgba(10, 102, 194, 0.3);">
+          <span class="material-symbols-rounded">point_of_sale</span> BÁN HÀNG
+        </button>
+      </div>
+
+      <div class="sidebar-group">
+        <div class="sidebar-group-title">QUẢN LÝ</div>
+        <div class="sidebar-icon" onclick="switchView('products')" id="nav-products">
+          <span class="material-symbols-rounded">inventory_2</span>
+          <span class="sidebar-label">Hàng hoá</span>
+        </div>
+        <div class="sidebar-icon" onclick="switchView('transactions')" id="nav-transactions">
+          <span class="material-symbols-rounded">sync_alt</span>
+          <span class="sidebar-label">Giao dịch</span>
+        </div>
+        <div class="sidebar-icon" onclick="switchView('partners')" id="nav-partners">
+          <span class="material-symbols-rounded">diversity_3</span>
+          <span class="sidebar-label">Đối tác</span>
+        </div>
+        <div class="sidebar-icon" onclick="switchView('cashbook')" id="nav-cashbook">
+          <span class="material-symbols-rounded">account_balance_wallet</span>
+          <span class="sidebar-label">Sổ quỹ</span>
+        </div>
+      </div>
+
+      <div class="sidebar-group">
+        <div class="sidebar-group-title">PHÂN TÍCH</div>
+        <div class="sidebar-icon" onclick="switchView('reports')" id="nav-reports">
+          <span class="material-symbols-rounded">monitoring</span>
+          <span class="sidebar-label">Báo cáo</span>
+        </div>
+      </div>
+
+      <div style="flex: 1"></div>
+      
+      <div class="sidebar-icon" onclick="switchView('settings')" id="nav-settings">
+        <span class="material-symbols-rounded">settings</span>
+        <span class="sidebar-label">Thiết lập</span>
+      </div>
+      <div class="sidebar-icon" onclick="toggleDarkMode()">
+        <span class="material-symbols-rounded" id="dark-mode-icon">dark_mode</span>
+        <span class="sidebar-label" id="dark-mode-text">Chế độ tối</span>
+      </div>
+      <div class="sidebar-icon" onclick="handleLogout()" style="color: var(--danger);">
+        <span class="material-symbols-rounded">logout</span>
+        <span class="sidebar-label">Đăng xuất</span>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="pos-main">
+      <header class="pos-header" style="justify-content: space-between;">
+        <div style="display: flex; align-items: center; gap: 8px; font-weight: bold; font-size: 1.1rem;">
+          <span class="material-symbols-rounded">storefront</span> <span id="header-title">Bán hàng</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 1rem;">
+          <button id="shift-header-btn" class="primary-btn" style="padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.9rem; display: flex; align-items: center; gap: 4px;" onclick="openShiftModal()">
+            <span class="material-symbols-rounded" style="font-size: 18px;">work_history</span> <span id="shift-btn-text">Mở ca</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- VIEW: POS -->
+      <div id="view-pos" class="view-section active">
+        <div class="search-container" style="display: flex; gap: 8px;">
+          <div class="search-input-wrapper" style="flex: 1;">
+            <span class="material-symbols-rounded search-icon">search</span>
+            <input type="text" id="search-input" class="search-input" placeholder="Tìm kiếm sản phẩm...">
+          </div>
+          <button class="primary-btn" id="btn-scan-barcode" onclick="openScannerModal()" style="height: 48px; border-radius: 12px; padding: 0 1rem; flex-shrink: 0; display: flex; align-items: center; gap: 6px;">
+            <span class="material-symbols-rounded">barcode_scanner</span>
+            <span class="scan-btn-text">Quét mã</span>
+          </button>
+        </div>
+        <!-- POS Menu View -->
+        <div id="pos-menu-view">
+          <div class="category-scroll" id="categories-container"></div>
+          <div class="products-container">
+            <div class="products-grid" id="products-grid"></div>
+            <div id="no-products" style="display: none; text-align: center; color: var(--text-muted); margin-top: 2rem;">
+              Không tìm thấy sản phẩm nào.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- VIEW: PRODUCTS -->
+      <div id="view-products" class="view-section scrollable-view">
+        <div class="view-header" style="border-bottom: none; padding-bottom: 0;">
+          <h2>Hàng hoá</h2>
+          <button class="primary-btn" onclick="openProductModal()">
+            <span class="material-symbols-rounded">add</span> Thêm mới
+          </button>
+        </div>
+        
+        <div class="tab-nav" style="display: flex; gap: 20px; border-bottom: 1px solid var(--border); margin: 0 1.5rem 1rem; padding-bottom: 5px;">
+          <div class="tab-item active" id="tab-p-list" onclick="switchProductTab('list')" style="padding: 10px 5px; cursor: pointer; font-weight: 600; color: var(--primary); border-bottom: 3px solid var(--primary); font-size: 0.95rem;">Hàng hoá</div>
+          <div class="tab-item" id="tab-p-price" onclick="switchProductTab('price')" style="padding: 10px 5px; cursor: pointer; font-weight: 500; color: var(--text-muted); font-size: 0.95rem;">Thiết lập giá</div>
+          <div class="tab-item" id="tab-p-stock" onclick="switchProductTab('stock')" style="padding: 10px 5px; cursor: pointer; font-weight: 500; color: var(--text-muted); font-size: 0.95rem;">Tồn kho</div>
+          <div class="tab-item" id="tab-p-audit" onclick="switchProductTab('audit')" style="padding: 10px 5px; cursor: pointer; font-weight: 500; color: var(--text-muted); font-size: 0.95rem;">Kiểm kho</div>
+          <div class="tab-item" id="tab-p-import" onclick="switchProductTab('import')" style="padding: 10px 5px; cursor: pointer; font-weight: 500; color: var(--text-muted); font-size: 0.95rem;">Nhập hàng (PO)</div>
+          <div class="tab-item" id="tab-p-voucher" onclick="switchProductTab('voucher')" style="padding: 10px 5px; cursor: pointer; font-weight: 500; color: var(--text-muted); font-size: 0.95rem;">Mã giảm giá</div>
+        </div>
+
+        <div id="product-tab-content" style="padding: 0 1.5rem;">
+          <!-- Content will be swapped here via JS -->
+          <div class="table-container" id="p-list-view">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Ảnh</th>
+                  <th>Tên sản phẩm</th>
+                  <th>Danh mục</th>
+                  <th>Tồn kho</th>
+                  <th>Giá nhập</th>
+                  <th>Giá bán</th>
+                  <th>Thao tác</th>
+                </tr>
+              </thead>
+              <tbody id="products-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+
+
+      <!-- VIEW: TRANSACTIONS (Giao dịch) -->
+      <div id="view-transactions" class="view-section scrollable-view">
+        <div class="view-header" style="border-bottom: none; padding-bottom: 0;">
+          <h2>Giao dịch</h2>
+        </div>
+        <div class="tab-nav" style="display: flex; gap: 20px; border-bottom: 1px solid var(--border); margin: 0 1.5rem 1rem; padding-bottom: 5px;">
+          <div class="tab-item active" id="tab-t-invoice" onclick="switchTransactionTab('invoice')" style="padding: 10px 5px; cursor: pointer; font-weight: 600; color: var(--primary); border-bottom: 3px solid var(--primary); font-size: 0.95rem;">Hoá đơn</div>
+          <div class="tab-item" id="tab-t-order" onclick="switchTransactionTab('order')" style="padding: 10px 5px; cursor: pointer; font-weight: 500; color: var(--text-muted); font-size: 0.95rem;">Đơn đặt hàng</div>
+        </div>
+        <div id="transaction-tab-content" style="padding: 0 1.5rem;">
+          <!-- Content rendered via JS -->
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr><th>Mã HĐ</th><th>Thời gian</th><th>Số lượng</th><th>Tổng tiền</th><th>Thao tác</th></tr>
+              </thead>
+              <tbody id="invoices-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- VIEW: PARTNERS (Đối tác) -->
+      <div id="view-partners" class="view-section scrollable-view">
+        <div class="view-header" style="border-bottom: none; padding-bottom: 0;">
+          <h2>Đối tác</h2>
+          <button class="primary-btn" id="partner-add-btn" onclick="openCustomerModal()"><span class="material-symbols-rounded">person_add</span> Thêm mới</button>
+        </div>
+        <div class="tab-nav" style="display: flex; gap: 20px; border-bottom: 1px solid var(--border); margin: 0 1.5rem 1rem; padding-bottom: 5px;">
+          <div class="tab-item active" id="tab-pt-customer" onclick="switchPartnerTab('customer')" style="padding: 10px 5px; cursor: pointer; font-weight: 600; color: var(--primary); border-bottom: 3px solid var(--primary); font-size: 0.95rem;">Khách hàng</div>
+          <div class="tab-item" id="tab-pt-supplier" onclick="switchPartnerTab('supplier')" style="padding: 10px 5px; cursor: pointer; font-weight: 500; color: var(--text-muted); font-size: 0.95rem;">Nhà cung cấp</div>
+          <div class="tab-item" id="tab-pt-delivery" onclick="switchPartnerTab('delivery')" style="padding: 10px 5px; cursor: pointer; font-weight: 500; color: var(--text-muted); font-size: 0.95rem;">Đối tác giao hàng</div>
+        </div>
+        <div id="partner-tab-content" style="padding: 0 1.5rem;">
+          <!-- Content rendered via JS -->
+        </div>
+      </div>
+
+      <div id="view-cashbook" class="view-section scrollable-view">
+        <div class="view-header" style="border-bottom: none; padding-bottom: 0;">
+          <h2>Sổ quỹ</h2>
+          <button class="primary-btn" onclick="openCashModal()"><span class="material-symbols-rounded">add_card</span> Lập phiếu thu/chi</button>
+        </div>
+        <div class="tab-nav" style="display: flex; gap: 20px; border-bottom: 1px solid var(--border); margin: 0 1.5rem 1rem; padding-bottom: 5px;">
+          <div class="tab-item active" id="tab-c-receipt" onclick="switchCashTab('receipt')" style="padding: 10px 5px; cursor: pointer; font-weight: 600; color: var(--primary); border-bottom: 3px solid var(--primary); font-size: 0.95rem;">Phiếu thu</div>
+          <div class="tab-item" id="tab-c-payment" onclick="switchCashTab('payment')" style="padding: 10px 5px; cursor: pointer; font-weight: 500; color: var(--text-muted); font-size: 0.95rem;">Phiếu chi</div>
+          <div class="tab-item" id="tab-c-fund" onclick="switchCashTab('fund')" style="padding: 10px 5px; cursor: pointer; font-weight: 500; color: var(--text-muted); font-size: 0.95rem;">Quản lý quỹ</div>
+        </div>
+        <div id="cash-tab-content" style="padding: 0 1.5rem;">
+        </div>
+      </div>
+
+      <!-- VIEW: REPORTS -->
+      <div id="view-reports" class="view-section scrollable-view">
+        <div class="view-header" style="border-bottom: none; padding-bottom: 0;">
+          <h2>Báo cáo & Phân tích</h2>
+          <button class="primary-btn" onclick="exportCSV()"><span class="material-symbols-rounded">download</span> Xuất Excel (CSV)</button>
+        </div>
+        <div class="tab-nav" style="display: flex; gap: 20px; border-bottom: 1px solid var(--border); margin: 0 1.5rem 1rem; padding-bottom: 5px; overflow-x: auto; scrollbar-width: none;">
+          <div class="tab-item active" id="tab-r-profit" onclick="switchReportTab('profit')" style="padding: 10px 5px; cursor: pointer; font-weight: 600; color: var(--primary); border-bottom: 3px solid var(--primary); font-size: 0.95rem; white-space: nowrap;">Báo cáo lãi</div>
+          <div class="tab-item" id="tab-r-analytics" onclick="switchReportTab('analytics')" style="padding: 10px 5px; cursor: pointer; font-weight: 500; color: var(--text-muted); font-size: 0.95rem; white-space: nowrap;">Biểu đồ phân tích</div>
+          <div class="tab-item" id="tab-r-group" onclick="switchReportTab('group')" style="padding: 10px 5px; cursor: pointer; font-weight: 500; color: var(--text-muted); font-size: 0.95rem; white-space: nowrap;">Nhóm hàng</div>
+          <div class="tab-item" id="tab-r-endday" onclick="switchReportTab('endday')" style="padding: 10px 5px; cursor: pointer; font-weight: 500; color: var(--text-muted); font-size: 0.95rem; white-space: nowrap;">Cuối ngày</div>
+          <div class="tab-item" id="tab-r-stock" onclick="switchReportTab('stock')" style="padding: 10px 5px; cursor: pointer; font-weight: 500; color: var(--text-muted); font-size: 0.95rem; white-space: nowrap;">Tồn kho</div>
+          <div class="tab-item" id="tab-r-debt" onclick="switchReportTab('debt')" style="padding: 10px 5px; cursor: pointer; font-weight: 500; color: var(--text-muted); font-size: 0.95rem; white-space: nowrap;">Công nợ</div>
+        </div>
+        
+        <!-- Reports Date Filter Bar -->
+        <div class="reports-filter-bar" style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin: 0 1.5rem 1rem; padding: 10px 15px; background: var(--bg-color); border-radius: var(--radius-md); border: 1px solid var(--border);">
+          <span class="material-symbols-rounded" style="color: var(--primary); font-size: 20px;">calendar_today</span>
+          <span style="font-weight: 600; font-size: 0.9rem;">Thời gian:</span>
+          <div style="display: flex; gap: 6px; flex-wrap: wrap;" id="reports-date-selectors">
+            <button class="category-btn active" data-range="today" onclick="setReportDateRange('today', this)" style="padding: 4px 12px; font-size: 0.8rem; height: 32px; border-radius: 8px;">Hôm nay</button>
+            <button class="category-btn" data-range="7days" onclick="setReportDateRange('7days', this)" style="padding: 4px 12px; font-size: 0.8rem; height: 32px; border-radius: 8px;">7 ngày qua</button>
+            <button class="category-btn" data-range="thismonth" onclick="setReportDateRange('thismonth', this)" style="padding: 4px 12px; font-size: 0.8rem; height: 32px; border-radius: 8px;">Tháng này</button>
+            <button class="category-btn" data-range="lastmonth" onclick="setReportDateRange('lastmonth', this)" style="padding: 4px 12px; font-size: 0.8rem; height: 32px; border-radius: 8px;">Tháng trước</button>
+            <button class="category-btn" data-range="thisyear" onclick="setReportDateRange('thisyear', this)" style="padding: 4px 12px; font-size: 0.8rem; height: 32px; border-radius: 8px;">Năm nay</button>
+            <button class="category-btn" data-range="custom" onclick="setReportDateRange('custom', this)" style="padding: 4px 12px; font-size: 0.8rem; height: 32px; border-radius: 8px;">Tùy chọn</button>
+          </div>
+          
+          <div id="reports-custom-dates" style="display: none; align-items: center; gap: 8px;">
+            <input type="date" id="report-start-date" class="form-input" style="width: auto; padding: 4px 8px; height: 32px; font-size: 0.85rem;" onchange="updateCustomReportDates()">
+            <span style="font-size: 0.9rem;">đến</span>
+            <input type="date" id="report-end-date" class="form-input" style="width: auto; padding: 4px 8px; height: 32px; font-size: 0.85rem;" onchange="updateCustomReportDates()">
+          </div>
+        </div>
+
+        <div id="report-tab-content" style="padding: 0 1.5rem;">
+          <div class="report-cards">
+            <div class="report-card">
+              <h3>Doanh thu hôm nay</h3>
+              <div class="report-value" id="report-today">0 ₫</div>
+            </div>
+            <div class="report-card">
+              <h3>Tổng số đơn</h3>
+              <div class="report-value" id="report-orders">0</div>
+            </div>
+            <div class="report-card">
+              <h3>Lợi nhuận hôm nay</h3>
+              <div class="report-value" id="report-profit" style="color: var(--success);">0 ₫</div>
+            </div>
+            <div class="report-card">
+              <h3>Tổng nợ khách hàng</h3>
+              <div class="report-value" id="report-total-debt" style="color: var(--danger);">0 ₫</div>
+            </div>
+          </div>
+        
+        <div style="background: linear-gradient(135deg, #1e293b 0%, #334155 100%); padding: 1.5rem; border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); margin-top: 1.5rem; color: white;">
+          <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 1.5rem;">
+            <div style="background: rgba(255,255,255,0.1); padding: 8px; border-radius: 50%; display: flex;">
+              <span class="material-symbols-rounded" style="color: #60a5fa;">psychology</span>
+            </div>
+            <div>
+              <h3 style="margin: 0; color: white;">AI Trợ lý phân tích</h3>
+              <p style="margin: 0; font-size: 0.8rem; opacity: 0.7;">Phân tích thông minh về xu hướng hàng hoá</p>
+            </div>
+          </div>
+          
+          <div id="ai-insights-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem;">
+            <!-- AI Insights will be rendered here -->
+            <div style="text-align: center; padding: 2rem; opacity: 0.5;">Đang phân tích dữ liệu...</div>
+          </div>
+        </div>
+
+        <div style="background: white; padding: 1.5rem; border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); margin-top: 1.5rem;">
+          <h3 style="margin-bottom: 1rem;">Biểu đồ Doanh thu (7 ngày gần nhất)</h3>
+          <canvas id="revenueChart" height="80"></canvas>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-top: 1.5rem;">
+          <div style="background: white; padding: 1.5rem; border-radius: var(--radius-lg); box-shadow: var(--shadow-sm);">
+            <h3 style="margin-bottom: 1rem;">Top Sản phẩm Bán chạy</h3>
+            <table class="data-table">
+              <thead><tr><th>Sản phẩm</th><th>Đã bán</th></tr></thead>
+              <tbody id="top-products-tbody"></tbody>
+            </table>
+          </div>
+          <div style="background: white; padding: 1.5rem; border-radius: var(--radius-lg); box-shadow: var(--shadow-sm);">
+            <h3 style="margin-bottom: 1rem;">Top Khách hàng</h3>
+            <table class="data-table">
+              <thead><tr><th>Khách hàng</th><th>Chi tiêu</th></tr></thead>
+              <tbody id="top-customers-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <h3 style="margin-top: 2rem; margin-bottom: 1rem;">Doanh thu chi tiết theo ngày</h3>
+        <div class="table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Ngày</th>
+                <th>Số đơn</th>
+                <th>Doanh thu</th>
+                <th>Lợi nhuận</th>
+              </tr>
+            </thead>
+            <tbody id="reports-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+      <!-- VIEW: SETTINGS -->
+      <div id="view-settings" class="view-section scrollable-view">
+        <div class="view-header">
+          <h2>Cài đặt hệ thống</h2>
+        </div>
+        
+        <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+          <div style="background: white; padding: 1.5rem; border-radius: var(--radius-lg); box-shadow: var(--shadow-sm);">
+            <h3 style="margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+              <span class="material-symbols-rounded" style="color: var(--primary);">store</span> Thông tin cửa hàng
+            </h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+              <div class="input-group">
+                <label>Tên cửa hàng</label>
+                <div class="input-wrapper">
+                  <span class="material-symbols-rounded">store</span>
+                  <input type="text" id="setting-store-name" class="form-input" value="Văn Tài POS">
+                </div>
+              </div>
+              <div class="input-group">
+                <label>Chi nhánh</label>
+                <div class="input-wrapper">
+                  <span class="material-symbols-rounded">location_on</span>
+                  <input type="text" id="setting-branch-name" class="form-input" value="Chi nhánh 1">
+                </div>
+              </div>
+            </div>
+            <button class="login-btn" style="width: auto; margin-top: 1rem; padding: 0.75rem 2rem;" onclick="saveSettings()">Lưu cài đặt</button>
+          </div>
+
+          <!-- VIETQR SETTINGS -->
+          <div style="background: white; padding: 1.5rem; border-radius: var(--radius-lg); box-shadow: var(--shadow-sm);">
+            <h3 style="margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+              <span class="material-symbols-rounded" style="color: var(--primary);">qr_code_2</span> Thông tin tài khoản VietQR
+            </h3>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.25rem;">
+              Nhập tài khoản ngân hàng để hệ thống tự tạo mã quét chuyển khoản VietQR tự điền số tiền khi thanh toán.
+            </p>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.5rem; align-items: end;">
+              <div class="input-group">
+                <label>Ngân hàng thụ hưởng</label>
+                <div class="input-wrapper">
+                  <span class="material-symbols-rounded">account_balance</span>
+                  <select id="setting-bank-code" class="form-input" style="padding-left: 3rem;">
+                    <option value="">-- Chọn ngân hàng --</option>
+                    <option value="MB">MB Bank (Ngân hàng Quân đội)</option>
+                    <option value="VCB">Vietcombank</option>
+                    <option value="TCB">Techcombank</option>
+                    <option value="BIDV">BIDV</option>
+                    <option value="ICB">VietinBank</option>
+                    <option value="ACB">ACB</option>
+                    <option value="VPB">VPBank</option>
+                    <option value="VIB">VIB</option>
+                    <option value="TPB">TPBank</option>
+                    <option value="STB">Sacombank</option>
+                  </select>
+                </div>
+              </div>
+              <div class="input-group">
+                <label>Số tài khoản nhận</label>
+                <div class="input-wrapper">
+                  <span class="material-symbols-rounded">credit_card</span>
+                  <input type="text" id="setting-bank-acc" class="form-input" placeholder="VD: 0999999999">
+                </div>
+              </div>
+              <div class="input-group">
+                <label>Tên chủ tài khoản (Chữ HOA không dấu)</label>
+                <div class="input-wrapper">
+                  <span class="material-symbols-rounded">person</span>
+                  <input type="text" id="setting-bank-name" class="form-input" placeholder="VD: NGUYEN VAN POS">
+                </div>
+              </div>
+            </div>
+            <button class="login-btn" style="width: auto; margin-top: 1rem; padding: 0.75rem 2rem;" onclick="saveSettings()">Lưu cài đặt</button>
+          </div>
+
+          <!-- RECEIPT PRINT SETTINGS -->
+          <div style="background: white; padding: 1.5rem; border-radius: var(--radius-lg); box-shadow: var(--shadow-sm);">
+            <h3 style="margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+              <span class="material-symbols-rounded" style="color: var(--primary);">receipt_long</span> Cài đặt in ấn hóa đơn
+            </h3>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.25rem;">
+              Tùy chỉnh thông tin liên hệ và lời nhắn hiển thị trên hóa đơn giấy in ra cho khách hàng.
+            </p>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1rem;">
+              <div class="input-group">
+                <label>Tiêu đề phụ hóa đơn (Khẩu hiệu)</label>
+                <div class="input-wrapper">
+                  <span class="material-symbols-rounded">description</span>
+                  <input type="text" id="setting-receipt-subtitle" class="form-input" placeholder="VD: Giải Pháp Quản Lý Bán Hàng Chuyên Nghiệp">
+                </div>
+              </div>
+              <div class="input-group">
+                <label>Địa chỉ in trên hóa đơn</label>
+                <div class="input-wrapper">
+                  <span class="material-symbols-rounded">location_on</span>
+                  <input type="text" id="setting-receipt-address" class="form-input" placeholder="VD: 123 Đường Số 1, Phường 2, Quận 3, TP.HCM">
+                </div>
+              </div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+              <div class="input-group">
+                <label>Hotline liên hệ</label>
+                <div class="input-wrapper">
+                  <span class="material-symbols-rounded">call</span>
+                  <input type="text" id="setting-receipt-phone" class="form-input" placeholder="VD: 0901.234.567">
+                </div>
+              </div>
+              <div class="input-group">
+                <label>Lời chúc ở chân trang</label>
+                <div class="input-wrapper">
+                  <span class="material-symbols-rounded">sentiment_satisfied</span>
+                  <input type="text" id="setting-receipt-footer" class="form-input" placeholder="VD: Hẹn gặp lại quý khách lần sau">
+                </div>
+              </div>
+            </div>
+            <button class="login-btn" style="width: auto; margin-top: 1rem; padding: 0.75rem 2rem;" onclick="saveSettings()">Lưu cài đặt</button>
+          </div>
+
+          <!-- GEMINI AI SETTINGS -->
+          <div style="background: white; padding: 1.5rem; border-radius: var(--radius-lg); box-shadow: var(--shadow-sm);">
+            <h3 style="margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+              <span class="material-symbols-rounded" style="color: var(--primary);">psychology</span> Cấu hình Trợ lý AI Gemini
+            </h3>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.25rem;">
+              Nhập mã API Key của Google Gemini để kích hoạt trí tuệ nhân tạo phân tích dữ liệu cửa hàng, trả lời thông minh và hỗ trợ giọng nói.
+            </p>
+            <div style="display: flex; gap: 1rem; align-items: flex-end;">
+              <div class="input-group" style="flex: 1; margin-bottom: 0;">
+                <label>Gemini API Key</label>
+                <div class="input-wrapper">
+                  <span class="material-symbols-rounded">key</span>
+                  <input type="password" id="setting-gemini-key" class="form-input" placeholder="Nhập API Key của bạn (AIzaSy...)">
+                </div>
+              </div>
+              <button class="login-btn" style="width: auto; margin: 0; padding: 0.85rem 2rem;" onclick="saveGeminiKey()">Lưu API Key</button>
+            </div>
+            <p style="font-size: 0.8rem; margin-top: 8px; color: var(--text-muted);">
+              Bạn có thể lấy khóa API miễn phí từ <a href="https://aistudio.google.com/" target="_blank" style="color: var(--primary); text-decoration: underline;">Google AI Studio</a>.
+            </p>
+          </div>
+
+          <div style="background: white; padding: 1.5rem; border-radius: var(--radius-lg); box-shadow: var(--shadow-sm);">
+            <h3 style="margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+              <span class="material-symbols-rounded" style="color: var(--primary);">cloud_sync</span> Đồng bộ đám mây & REST API (Offline-First)
+            </h3>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.25rem;">
+              Kết nối và đồng bộ toàn bộ dữ liệu POS lên máy chủ REST API nội bộ hoặc đám mây. Tự động dùng LocalStorage dự phòng nếu mất kết nối.
+            </p>
+            
+            <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 1.5rem; margin-bottom: 1.5rem; align-items: end;">
+              <div class="input-group" style="margin-bottom: 0;">
+                <label>Đồng bộ REST API</label>
+                <div style="display: flex; align-items: center; gap: 8px; height: 48px;">
+                  <input type="checkbox" id="setting-sync-enabled" onchange="toggleSyncMode(this.checked)" style="width: 20px; height: 20px; cursor: pointer;">
+                  <span id="sync-status-badge" class="badge" style="background: var(--border); color: var(--text-main);">Chế độ: Offline (Tắt)</span>
+                </div>
+              </div>
+              <div class="input-group" style="margin-bottom: 0;">
+                <label>Địa chỉ máy chủ API (REST Server URL)</label>
+                <div class="input-wrapper">
+                  <span class="material-symbols-rounded">dns</span>
+                  <input type="text" id="setting-sync-url" class="form-input" placeholder="http://localhost:3000" value="http://localhost:3000" onchange="saveSettings()">
+                </div>
+              </div>
+            </div>
+            
+            <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+              <button class="primary-btn" id="btn-manual-sync" onclick="syncWithCloudServer()" style="display: flex; align-items: center; gap: 6px;">
+                <span class="material-symbols-rounded">sync</span> Đồng bộ ngay
+              </button>
+              <button class="primary-btn" style="background: var(--success); border-color: var(--success); display: flex; align-items: center; gap: 6px;" onclick="exportAllData()">
+                <span class="material-symbols-rounded">download</span> Xuất Backup (JSON)
+              </button>
+              <button class="primary-btn" style="background: var(--warning); border-color: var(--warning); display: flex; align-items: center; gap: 6px;" onclick="document.getElementById('import-file').click()">
+                <span class="material-symbols-rounded">upload</span> Khôi phục (Restore)
+              </button>
+              <input type="file" id="import-file" style="display: none;" onchange="importAllData(event)">
+            </div>
+          </div>
+
+          <!-- USER MANAGEMENT -->
+          <div style="background: white; padding: 1.5rem; border-radius: var(--radius-lg); box-shadow: var(--shadow-sm);">
+            <h3 style="margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+              <span class="material-symbols-rounded" style="color: var(--primary);">person_add</span> Quản lý tài khoản
+            </h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1.5rem; align-items: end; margin-bottom: 2rem;">
+              <div class="input-group">
+                <label>Tên đăng nhập</label>
+                <div class="input-wrapper">
+                  <span class="material-symbols-rounded">person</span>
+                  <input type="text" id="new-user-name" class="form-input" placeholder="Tên user">
+                </div>
+              </div>
+              <div class="input-group">
+                <label>Mật khẩu</label>
+                <div class="input-wrapper">
+                  <span class="material-symbols-rounded">lock</span>
+                  <input type="password" id="new-user-pass" class="form-input" placeholder="Mật khẩu">
+                </div>
+              </div>
+              <button class="login-btn" style="width: 100%; margin: 0; padding: 0.85rem;" onclick="addUser()">Thêm tài khoản</button>
+            </div>
+            
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Tên đăng nhập</th>
+                  <th>Vai trò</th>
+                  <th>Thao tác</th>
+                </tr>
+              </thead>
+              <tbody id="users-tbody"></tbody>
+            </table>
+          </div>
+
+          <!-- SYSTEM AUDIT LOGS -->
+          <div id="settings-audit-logs-card" style="background: white; padding: 1.5rem; border-radius: var(--radius-lg); box-shadow: var(--shadow-sm);">
+            <h3 style="margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+              <span class="material-symbols-rounded" style="color: var(--primary);">history_toggle_off</span> Nhật ký hoạt động (Audit Logs)
+            </h3>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.25rem;">
+              Danh sách ghi nhận hoạt động nhạy cảm trên hệ thống của nhân viên và quản trị viên.
+            </p>
+            
+            <div class="table-container" style="max-height: 300px; overflow-y: auto;">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Thời gian</th>
+                    <th>Tài khoản</th>
+                    <th>Hoạt động</th>
+                  </tr>
+                </thead>
+                <tbody id="audit-logs-tbody">
+                  <!-- Rendered via JS -->
+                </tbody>
+              </table>
+            </div>
+            <button class="clear-btn" style="color: var(--danger); margin-top: 1rem; padding: 0.5rem; display: flex; align-items: center; gap: 4px;" onclick="clearAuditLogs()">
+              <span class="material-symbols-rounded" style="font-size: 18px;">delete_sweep</span> Xóa nhật ký
+            </button>
+          </div>
+
+          <!-- Change Password Section -->
+          <div style="background: white; padding: 1.5rem; border-radius: var(--radius-lg); box-shadow: var(--shadow-sm);">
+            <h3 style="margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+              <span class="material-symbols-rounded" style="color: var(--primary);">lock_reset</span> Đổi mật khẩu tài khoản
+            </h3>
+            <div style="display: flex; gap: 1rem; align-items: flex-end;">
+              <div class="input-group" style="flex: 1; margin-bottom: 0;">
+                <label>Mật khẩu mới</label>
+                <div class="input-wrapper">
+                  <span class="material-symbols-rounded">lock</span>
+                  <input type="password" id="change-pass-input" class="form-input" placeholder="Nhập mật khẩu mới">
+                </div>
+              </div>
+              <button class="login-btn" style="width: auto; margin: 0; padding: 0.85rem 2rem;" onclick="changePassword()">Cập nhật</button>
+            </div>
+          </div>
+
+          <!-- Display & Appearance -->
+          <div style="background: white; padding: 1.5rem; border-radius: var(--radius-lg); box-shadow: var(--shadow-sm);">
+            <h3 style="margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+              <span class="material-symbols-rounded" style="color: var(--primary);">palette</span> Giao diện & Hiển thị
+            </h3>
+            
+            <div style="margin-bottom: 1.5rem; border-bottom: 1px solid var(--border); padding-bottom: 1.25rem;">
+              <div style="font-weight: 600; margin-bottom: 0.25rem;">Màu sắc chủ đạo (Brand Theme Color)</div>
+              <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.75rem;">Chọn tông màu chủ đạo thương hiệu hiển thị trên toàn hệ thống</div>
+              <div class="theme-picker" id="settings-theme-picker">
+                <div class="theme-dot indigo active" data-theme="indigo" onclick="changeThemeColor('indigo')" title="Indigo Classic">
+                  <span class="material-symbols-rounded">check</span>
+                </div>
+                <div class="theme-dot teal" data-theme="teal" onclick="changeThemeColor('teal')" title="Teal Fresh">
+                  <span class="material-symbols-rounded">check</span>
+                </div>
+                <div class="theme-dot emerald" data-theme="emerald" onclick="changeThemeColor('emerald')" title="Emerald Green">
+                  <span class="material-symbols-rounded">check</span>
+                </div>
+                <div class="theme-dot blue" data-theme="blue" onclick="changeThemeColor('blue')" title="Ocean Blue">
+                  <span class="material-symbols-rounded">check</span>
+                </div>
+                <div class="theme-dot orange" data-theme="orange" onclick="changeThemeColor('orange')" title="Warm Orange">
+                  <span class="material-symbols-rounded">check</span>
+                </div>
+                <div class="theme-dot rose" data-theme="rose" onclick="changeThemeColor('rose')" title="Rose Sweet">
+                  <span class="material-symbols-rounded">check</span>
+                </div>
+              </div>
+            </div>
+
+            <div style="display: flex; align-items: center; justify-content: space-between; padding: 1rem; background: var(--bg-color); border-radius: 0.75rem;">
+              <div>
+                <div style="font-weight: 600;">Chế độ tối (Dark Mode)</div>
+                <div style="font-size: 0.85rem; color: var(--text-muted);">Giảm mỏi mắt khi làm việc ban đêm</div>
+              </div>
+              <button class="primary-btn" onclick="toggleDarkMode()" id="settings-dark-mode-btn" style="padding: 0.5rem 1rem;">
+                <span class="material-symbols-rounded">dark_mode</span> Bật
+              </button>
+            </div>
+          </div>
+
+          <!-- Logout Button (Especially for Mobile) -->
+          <div style="margin-bottom: 2rem;">
+            <button class="login-btn" style="background: var(--danger); width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;" onclick="handleLogout()">
+              <span class="material-symbols-rounded">logout</span> Đăng xuất tài khoản
+            </button>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Cart Overlay & Panel (Only for POS view) -->
+    <div id="cart-overlay" class="cart-overlay"></div>
+    <aside id="cart-panel" class="cart-panel">
+      <div class="cart-header" style="flex-direction: column; align-items: stretch; gap: 0.5rem; padding-bottom: 0.5rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div class="cart-title" style="font-size: 1rem;">
+            <span class="material-symbols-rounded">shopping_cart</span> Giỏ hàng
+          </div>
+          <button id="cart-close-btn" class="cart-close-btn">
+            <span class="material-symbols-rounded">close</span>
+          </button>
+        </div>
+        <div id="cart-tabs" style="display: flex; gap: 0.5rem; overflow-x: auto; padding-top: 0.5rem; padding-bottom: 0.25rem;">
+          <!-- Tabs rendered via JS -->
+        </div>
+        <div id="cart-table-actions" style="display: none; gap: 8px; margin-top: 5px; border-top: 1px solid var(--border); padding-top: 8px;">
+          <!-- Rendered via JS: Đổi bàn, Ghép bàn -->
+        </div>
+      </div>
+      <div class="cart-items" id="cart-items"></div>
+      <div class="cart-footer">
+        <div class="cart-summary-row">
+          <span>Số lượng</span>
+          <span id="cart-count">0 món</span>
+        </div>
+        <div class="cart-summary-row">
+          <span>Tạm tính</span>
+          <span id="cart-subtotal">0 ₫</span>
+        </div>
+        <div class="cart-summary-row total">
+          <span>Tổng cộng</span>
+          <span id="cart-total" style="color: var(--primary)">0 ₫</span>
+        </div>
+        <div style="display: flex; gap: 1rem;">
+          <button id="clear-cart-btn" class="clear-btn" disabled style="opacity: 0.5">
+            <span class="material-symbols-rounded">delete</span> Huỷ
+          </button>
+          <button id="checkout-btn" class="checkout-btn" disabled style="opacity: 0.5; flex: 1;">
+            <span class="material-symbols-rounded">payments</span> Thanh toán
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Mobile Navigation Bar -->
+    <nav class="mobile-nav" id="mobile-nav">
+      <div class="mobile-nav-item active" onclick="switchView('pos')" id="mnav-pos">
+        <span class="material-symbols-rounded">point_of_sale</span>
+        <span>POS</span>
+      </div>
+      <div class="mobile-nav-item" onclick="switchView('partners')" id="mnav-partners">
+        <span class="material-symbols-rounded">group</span>
+        <span>Đối tác</span>
+      </div>
+      <div class="mobile-nav-item" onclick="switchView('products')" id="mnav-products">
+        <span class="material-symbols-rounded">inventory_2</span>
+        <span>Kho</span>
+      </div>
+      <div class="mobile-nav-item" onclick="switchView('transactions')" id="mnav-transactions">
+        <span class="material-symbols-rounded">receipt_long</span>
+        <span>Giao dịch</span>
+      </div>
+      <div class="mobile-nav-item" onclick="switchView('reports')" id="mnav-reports">
+        <span class="material-symbols-rounded">bar_chart</span>
+        <span>BC</span>
+      </div>
+      <div class="mobile-nav-item" onclick="switchView('settings')" id="mnav-settings">
+        <span class="material-symbols-rounded">settings</span>
+        <span>Cài đặt</span>
+      </div>
+    </nav>
+
+    <!-- Mobile Cart Button -->
+    <button id="mobile-cart-btn" class="mobile-cart-btn">
+      <span class="material-symbols-rounded">shopping_cart</span>
+      <span id="mobile-cart-badge" class="badge" style="display: none;">0</span>
+    </button>
+  </div>
+
+  <!-- Product Modal -->
+  <div id="product-modal-overlay" class="modal-overlay" style="display: none;">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 style="margin: 0;">Thêm sản phẩm mới</h3>
+        <button class="cart-close-btn" onclick="closeProductModal()"><span
+            class="material-symbols-rounded">close</span></button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group" style="display: flex; flex-direction: row; gap: 1rem;">
+          <div style="flex: 2; display: flex; flex-direction: column; gap: 0.5rem;">
+            <label>Tên sản phẩm</label>
+            <input type="text" id="modal-name" class="search-input" placeholder="Nhập tên sản phẩm..."
+              style="padding-left: 1rem;">
+          </div>
+          <div style="flex: 1; display: flex; flex-direction: column; gap: 0.5rem;">
+            <label>Mã SKU/Barcode</label>
+            <input type="text" id="modal-sku" class="search-input" placeholder="VD: SP01"
+              style="padding-left: 1rem;">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Danh mục</label>
+          <select id="modal-category" class="search-input" style="padding-left: 1rem;"></select>
+        </div>
+        <div class="form-group" style="display: flex; gap: 1rem; flex-direction: row;">
+          <div style="flex: 1; display: flex; flex-direction: column; gap: 0.5rem;">
+            <label>Giá nhập</label>
+            <input type="number" id="modal-cost-price" class="search-input" placeholder="Vd: 20000"
+              style="padding-left: 1rem;">
+          </div>
+          <div style="flex: 1; display: flex; flex-direction: column; gap: 0.5rem;">
+            <label>Giá bán</label>
+            <input type="number" id="modal-price" class="search-input" placeholder="Vd: 30000"
+              style="padding-left: 1rem;">
+          </div>
+          <div style="flex: 1; display: flex; flex-direction: column; gap: 0.5rem;">
+            <label>Tồn kho</label>
+            <input type="number" id="modal-stock" class="search-input" placeholder="Vd: 100"
+              style="padding-left: 1rem;">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Tải ảnh lên</label>
+          <input type="file" id="modal-img-file" accept="image/*" class="search-input"
+            style="padding-left: 1rem; padding-top: 0.6rem;">
+          <input type="hidden" id="modal-img">
+          <div id="modal-img-preview" style="margin-top: 0.5rem; display: none;">
+            <img src=""
+              style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border);">
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="clear-btn" style="padding: 0.75rem 1.5rem;" onclick="closeProductModal()">Huỷ</button>
+        <button class="primary-btn" style="padding: 0.75rem 1.5rem;" onclick="saveProduct()">Lưu sản phẩm</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Category Modal -->
+  <div id="category-modal-overlay" class="modal-overlay" style="display: none;">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Quản lý danh mục</h3>
+        <button class="clear-btn" onclick="closeCategoryModal()">
+          <span class="material-symbols-rounded">close</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div style="display: flex; gap: 8px;">
+          <input type="text" id="new-category-input" class="search-input" placeholder="Tên danh mục mới" style="flex: 1; padding-left: 10px;">
+          <button class="primary-btn" onclick="addCategory()">Thêm</button>
+        </div>
+        <div id="category-list" style="margin-top: 15px; display: flex; flex-direction: column; gap: 8px; max-height: 300px; overflow-y: auto;">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Checkout Modal -->
+  <div id="checkout-modal-overlay" class="modal-overlay" style="display: none;">
+    <div class="modal" style="max-width: 500px;">
+      <div class="modal-header">
+        <h3>Thanh toán đơn hàng</h3>
+        <button class="clear-btn" onclick="closeCheckoutModal()" style="padding: 0.25rem; border: none; background: transparent;">
+          <span class="material-symbols-rounded">close</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div style="display: flex; gap: 1rem;">
+          <div class="form-group" style="flex: 1;">
+            <label>Giảm giá (VNĐ hoặc %)</label>
+            <input type="text" id="checkout-discount" class="search-input" placeholder="Vd: 10000 hoặc 10%" style="padding-left: 10px;" oninput="calculateCheckout()">
+          </div>
+          <div class="form-group" style="flex: 1;">
+            <label>Thuế VAT (%)</label>
+            <input type="number" id="checkout-vat" class="search-input" placeholder="Vd: 8" style="padding-left: 10px;" oninput="calculateCheckout()" min="0" max="100">
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-top: 0.5rem;">
+          <label>Mã giảm giá / Voucher</label>
+          <div style="display: flex; gap: 8px;">
+            <input type="text" id="checkout-voucher" class="search-input" placeholder="Nhập mã voucher (VD: KM20K)..." style="padding-left: 10px; flex: 1;">
+            <button class="primary-btn" id="btn-apply-voucher" onclick="applyVoucherCode()" style="padding: 0 1.25rem; border-radius: 8px; font-size: 0.9rem;">Áp dụng</button>
+          </div>
+          <p id="checkout-voucher-status" style="font-size: 0.8rem; margin-top: 4px; display: none;"></p>
+        </div>
+
+        <div style="background: var(--bg-color); padding: 1rem; border-radius: var(--radius-md); margin-top: 0.5rem;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; color: var(--text-muted);">
+            <span>Tổng tiền hàng:</span>
+            <span id="checkout-subtotal" style="font-weight: 600; color: var(--text-main);">0 ₫</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; color: var(--text-muted);">
+            <span>Giảm trực tiếp:</span>
+            <span id="checkout-discount-val" style="font-weight: 600; color: var(--danger);">-0 ₫</span>
+          </div>
+          <div id="checkout-voucher-row" style="display: none; justify-content: space-between; margin-bottom: 0.5rem; color: var(--text-muted);">
+            <span>Voucher giảm giá (<strong id="checkout-voucher-code-display"></strong>):</span>
+            <span id="checkout-voucher-val" style="font-weight: 600; color: var(--danger);">-0 ₫</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; color: var(--text-muted);">
+            <span>Thuế VAT:</span>
+            <span id="checkout-vat-val" style="font-weight: 600;">+0 ₫</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-top: 1rem; padding-top: 1rem; border-top: 1px dashed var(--border); font-size: 1.25rem; font-weight: 800;">
+            <span>Khách cần trả:</span>
+            <span id="checkout-total" style="color: var(--primary);">0 ₫</span>
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-top: 0.5rem;">
+          <label>Khách hàng (Tích điểm / Ghi nợ)</label>
+          <select id="checkout-customer" class="search-input" style="padding-left: 10px; margin-bottom: 0.5rem;" onchange="calculateCheckout()">
+            <option value="">-- Khách lẻ --</option>
+          </select>
+        </div>
+
+        <div class="form-group" style="margin-top: 0.5rem;">
+          <label>Phương thức thanh toán</label>
+          <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;" id="payment-methods">
+            <button class="category-btn active" data-method="Tiền mặt" style="flex: 1;" onclick="selectPaymentMethod('Tiền mặt', this)">Tiền mặt</button>
+            <button class="category-btn" data-method="Chuyển khoản" style="flex: 1;" onclick="selectPaymentMethod('Chuyển khoản', this)">Chuyển khoản</button>
+            <button class="category-btn" data-method="Thẻ" style="flex: 1;" onclick="selectPaymentMethod('Thẻ', this)">Quẹt thẻ</button>
+            <button class="category-btn" data-method="Ghi nợ" style="flex: 1;" onclick="selectPaymentMethod('Ghi nợ', this)">Ghi nợ</button>
+          </div>
+        </div>
+        
+        <div id="qr-code-container" style="display: none; align-items: center; justify-content: center; margin-top: 1rem; flex-direction: column; gap: 0.5rem;">
+           <img id="qr-code-img" src="" alt="QR Code" style="width: 150px; height: 150px; border-radius: 8px; border: 1px solid var(--border);">
+           <span style="font-size: 0.85rem; color: var(--text-muted);">Quét mã để thanh toán</span>
+        </div>
+
+      </div>
+      <div class="modal-footer" style="justify-content: space-between;">
+        <button class="clear-btn" style="padding: 0.75rem 1rem;" onclick="confirmCheckout(true)">
+          <span class="material-symbols-rounded" style="font-size: 20px;">receipt_long</span> In tạm tính
+        </button>
+        <button class="primary-btn" style="padding: 0.75rem 1.5rem;" onclick="confirmCheckout(false)">Thanh toán</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Shift Modal -->
+  <div id="shift-modal-overlay" class="modal-overlay" style="display: none;">
+    <div class="modal" style="max-width: 400px;">
+      <div class="modal-header">
+        <h3 id="shift-modal-title">Mở ca làm việc</h3>
+        <button class="clear-btn" onclick="closeShiftModal()" style="padding: 0.25rem; border: none; background: transparent;">
+          <span class="material-symbols-rounded">close</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div id="open-shift-body">
+          <div class="form-group">
+            <label>Tiền mặt đầu ca (VNĐ)</label>
+            <input type="number" id="shift-initial-cash" class="search-input" placeholder="Vd: 500000" style="padding-left: 10px;">
+          </div>
+        </div>
+        <div id="close-shift-body" style="display: none;">
+          <div style="background: var(--bg-color); padding: 1rem; border-radius: var(--radius-md); margin-bottom: 1rem;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+              <span>Thời gian mở ca:</span>
+              <span id="shift-start-time" style="font-weight: 600;">--</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+              <span>Tiền mặt đầu ca:</span>
+              <span id="shift-initial-display" style="font-weight: 600;">0 ₫</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+              <span>Doanh thu tiền mặt:</span>
+              <span id="shift-cash-revenue" style="font-weight: 600;">+0 ₫</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px dashed var(--border);">
+              <span>Tổng tiền mặt mong đợi:</span>
+              <span id="shift-expected-cash" style="font-weight: 800; color: var(--primary);">0 ₫</span>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Tiền mặt kiểm đếm (VNĐ)</label>
+            <input type="number" id="shift-actual-cash" class="search-input" placeholder="Nhập số tiền có trong két..." style="padding-left: 10px;" oninput="calculateShiftDiff()">
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-top: 0.5rem;">
+            <span>Lệch quỹ:</span>
+            <span id="shift-diff" style="font-weight: 800;">0 ₫</span>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="clear-btn" style="padding: 0.75rem 1.5rem;" onclick="closeShiftModal()">Huỷ</button>
+        <button id="shift-action-btn" class="primary-btn" style="padding: 0.75rem 1.5rem;" onclick="submitShift()">Mở ca</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cash Voucher Modal -->
+  <div id="cash-modal-overlay" class="modal-overlay" style="display: none;">
+    <div class="modal" style="max-width: 400px;">
+      <div class="modal-header">
+        <h3 id="cash-modal-title">Lập phiếu Thu/Chi</h3>
+        <button class="clear-btn" onclick="closeCashModal()"><span class="material-symbols-rounded">close</span></button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Loại phiếu</label>
+          <select id="modal-cash-type" class="search-input" style="padding-left: 10px;">
+            <option value="Thu">Phiếu Thu (+)</option>
+            <option value="Chi">Phiếu Chi (-)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Số tiền (₫)</label>
+          <input type="number" id="modal-cash-amount" class="search-input" placeholder="Vd: 50000" style="padding-left: 10px;">
+        </div>
+        <div class="form-group">
+          <label>Lý do / Mô tả</label>
+          <textarea id="modal-cash-note" class="form-input" style="height: 80px; padding: 10px;" placeholder="Nhập lý do thu/chi..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="clear-btn" onclick="closeCashModal()">Huỷ</button>
+        <button class="primary-btn" onclick="saveCashVoucher()">Lưu phiếu</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Partner Modal (Supplier/Delivery) -->
+  <div id="partner-modal-overlay" class="modal-overlay" style="display: none;">
+    <div class="modal" style="max-width: 400px;">
+      <div class="modal-header">
+        <h3 id="partner-modal-title">Đối tác mới</h3>
+        <button class="clear-btn" onclick="closePartnerModal()"><span class="material-symbols-rounded">close</span></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="modal-partner-type">
+        <div class="form-group">
+          <label>Tên đối tác</label>
+          <input type="text" id="modal-partner-name" class="search-input" placeholder="Nhập tên..." style="padding-left: 10px;">
+        </div>
+        <div class="form-group">
+          <label>Số điện thoại</label>
+          <input type="text" id="modal-partner-phone" class="search-input" placeholder="09xxxxxxxx" style="padding-left: 10px;">
+        </div>
+        <div class="form-group" id="partner-address-group">
+          <label>Địa chỉ</label>
+          <input type="text" id="modal-partner-address" class="search-input" placeholder="Nhập địa chỉ..." style="padding-left: 10px;">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="clear-btn" onclick="closePartnerModal()">Huỷ</button>
+        <button class="primary-btn" onclick="savePartner()">Lưu thông tin</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="print-area" class="print-area"></div>
+
+  <!-- Customer Modal -->
+  <div id="customer-modal-overlay" class="modal-overlay" style="display: none;">
+    <div class="modal" style="max-width: 400px;">
+      <div class="modal-header">
+        <h3 id="customer-modal-title">Thêm Khách hàng</h3>
+        <button class="clear-btn" onclick="closeCustomerModal()" style="padding: 0.25rem; border: none; background: transparent;">
+          <span class="material-symbols-rounded">close</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Tên khách hàng</label>
+          <input type="text" id="modal-customer-name" class="search-input" placeholder="Nguyễn Văn A" style="padding-left: 10px;">
+        </div>
+        <div class="form-group">
+          <label>Số điện thoại</label>
+          <input type="text" id="modal-customer-phone" class="search-input" placeholder="0909123456" style="padding-left: 10px;">
+        </div>
+        <div class="form-group">
+          <label>Phân hạng</label>
+          <select id="modal-customer-tier" class="search-input" style="padding-left: 10px;">
+            <option value="Thành viên">Thành viên</option>
+            <option value="VIP">VIP</option>
+            <option value="Đại lý">Đại lý</option>
+          </select>
+        </div>
+        <div class="form-group" style="display: flex; gap: 1rem;">
+          <div style="flex: 1;">
+            <label>Điểm tích luỹ</label>
+            <input type="number" id="modal-customer-points" class="search-input" style="padding-left: 10px;" value="0">
+          </div>
+          <div style="flex: 1;">
+            <label>Công nợ hiện tại (₫)</label>
+            <input type="number" id="modal-customer-debt" class="search-input" style="padding-left: 10px;" value="0">
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="clear-btn" style="padding: 0.75rem 1.5rem;" onclick="closeCustomerModal()">Huỷ</button>
+        <button class="primary-btn" style="padding: 0.75rem 1.5rem;" onclick="saveCustomer()">Lưu thông tin</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Invoice Detail Modal -->
+  <div id="invoice-detail-modal-overlay" class="modal-overlay" style="display: none; z-index: 1050;">
+    <div class="modal" style="max-width: 500px;">
+      <div class="modal-header">
+        <h3>Chi tiết hóa đơn <span id="detail-invoice-id" style="color: var(--primary);"></span></h3>
+        <button class="clear-btn" onclick="closeInvoiceDetailModal()" style="padding: 0.25rem; border: none; background: transparent;">
+          <span class="material-symbols-rounded">close</span>
+        </button>
+      </div>
+      <div class="modal-body" style="padding: 1rem 1.5rem;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 0.75rem; font-size: 0.9rem; color: var(--text-muted);">
+          <span>Thời gian: <strong id="detail-invoice-date" style="color: var(--text-main);"></strong></span>
+          <span>Thanh toán: <strong id="detail-invoice-method" style="color: var(--text-main);"></strong></span>
+        </div>
+        <div style="margin-bottom: 0.75rem; font-size: 0.9rem; color: var(--text-muted);">
+          Khách hàng: <strong id="detail-invoice-customer" style="color: var(--text-main);"></strong>
+        </div>
+        
+        <div class="table-container" style="max-height: 200px; overflow-y: auto; margin-bottom: 1rem;">
+          <table class="data-table" style="font-size: 0.85rem;">
+            <thead>
+              <tr>
+                <th>Sản phẩm</th>
+                <th style="text-align: center;">SL</th>
+                <th style="text-align: right;">Đơn giá</th>
+                <th style="text-align: right;">Thành tiền</th>
+              </tr>
+            </thead>
+            <tbody id="detail-invoice-items-tbody"></tbody>
+          </table>
+        </div>
+        
+        <div style="background: var(--bg-color); padding: 1rem; border-radius: var(--radius-md);">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-size: 0.85rem;">
+            <span>Tiền hàng:</span>
+            <span id="detail-invoice-subtotal">0 ₫</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-size: 0.85rem; color: var(--danger);">
+            <span>Giảm giá:</span>
+            <span id="detail-invoice-discount">-0 ₫</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-size: 0.85rem;">
+            <span>Thuế VAT:</span>
+            <span id="detail-invoice-vat">+0 ₫</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; font-weight: 800; font-size: 1.1rem; border-top: 1px dashed var(--border); padding-top: 0.75rem;">
+            <span>Tổng cộng:</span>
+            <span id="detail-invoice-total" style="color: var(--primary);">0 ₫</span>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer" style="justify-content: flex-end; gap: 0.5rem;">
+        <button class="clear-btn" style="padding: 0.75rem 1.5rem;" onclick="closeInvoiceDetailModal()">Đóng</button>
+        <button class="primary-btn" id="btn-print-detail-invoice" style="padding: 0.75rem 1.5rem;">
+          <span class="material-symbols-rounded">print</span> In lại hóa đơn
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Barcode Scanner Modal -->
+  <div id="scanner-modal-overlay" class="modal-overlay" style="display: none; z-index: 11000;">
+    <div class="modal" style="max-width: 450px;">
+      <div class="modal-header">
+        <h3 style="margin: 0;">Quét mã vạch sản phẩm</h3>
+        <button class="clear-btn" onclick="closeScannerModal()" style="padding: 0.25rem; border: none; background: transparent;">
+          <span class="material-symbols-rounded">close</span>
+        </button>
+      </div>
+      <div class="modal-body" style="padding: 1rem;">
+        <div id="barcode-reader-container" style="width: 100%; overflow: hidden; border-radius: 8px; background: #000; position: relative;">
+          <div id="barcode-reader" style="width: 100%;"></div>
+          <div class="scanner-laser" style="position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--danger); box-shadow: 0 0 8px var(--danger); animation: laser-sweep 2s infinite linear; z-index: 10;"></div>
+        </div>
+        <div style="margin-top: 1rem; display: flex; align-items: center; justify-content: space-between;">
+          <span style="font-size: 0.85rem; color: var(--text-muted);">Di chuyển mã vạch vào khung camera.</span>
+          <button class="primary-btn" onclick="toggleContinuousScan()" id="btn-scan-mode" style="padding: 4px 10px; font-size: 0.8rem; border-radius: 8px;">Quét liên tục: BẬT</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DYNAMIC AI POS GEMINI ASSISTANT -->
+  <div id="ai-chat-bubble" class="ai-chat-bubble" onclick="toggleAIChatPanel()" title="Trợ lý ảo AI Gemini">
+    <span class="material-symbols-rounded">psychology</span>
+    <span class="pulse-ring"></span>
+  </div>
+
+  <div id="ai-chat-panel" class="ai-chat-panel" style="display: none;">
+    <div class="ai-chat-header">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <div class="ai-avatar">
+          <span class="material-symbols-rounded">psychology</span>
+        </div>
+        <div>
+          <strong style="font-size: 0.95rem; color: var(--text-main);">Văn Tài POS Assistant</strong>
+          <div style="font-size: 0.75rem; color: var(--success); font-weight: 500; display: flex; align-items: center; gap: 4px;">
+            <span style="width: 6px; height: 6px; border-radius: 50%; background: var(--success); display: inline-block;"></span> Trực tuyến
+          </div>
+        </div>
+      </div>
+      <button class="clear-btn" onclick="toggleAIChatPanel()" style="padding: 4px; border: none; background: transparent;">
+        <span class="material-symbols-rounded">close</span>
+      </button>
+    </div>
+    
+    <div class="ai-chat-messages" id="ai-chat-messages">
+      <div class="ai-message bot">
+        Chào chủ tiệm! Em là Trợ lý ảo Gemini POS. Anh có thể hỏi em về doanh thu hôm nay, món bán chạy nhất, khách nợ nhiều nhất, hàng sắp hết, hoặc số dư quỹ nhé! 😊
+      </div>
+    </div>
+    
+    <div class="ai-chat-input-area">
+      <input type="text" id="ai-chat-input" placeholder="Hỏi AI về cửa hàng của bạn..." onkeydown="handleAIChatInput(event)">
+      <button class="primary-btn" onclick="submitAIChatQuery()" style="width: 36px; height: 36px; border-radius: 50%; padding: 0; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+        <span class="material-symbols-rounded" style="font-size: 20px;">send</span>
+      </button>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').then(reg => {
+          console.log('Service Worker registered');
+        }).catch(err => {
+          console.log('Service Worker failed', err);
+        });
+      });
+    }
+  </script>
+</body>
+
+</html>

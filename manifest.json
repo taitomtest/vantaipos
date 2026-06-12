@@ -1,0 +1,19 @@
+{
+  "name": "Văn Tài POS - Quản lý bán hàng",
+  "short_name": "Văn Tài POS",
+  "description": "Hệ thống quản lý bán hàng chuyên nghiệp, nhanh chóng và bảo mật.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f8f9fa",
+  "theme_color": "#0a66c2",
+  "orientation": "portrait",
+  "scope": "./",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/3225/3225077.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
